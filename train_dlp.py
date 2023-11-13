@@ -21,7 +21,7 @@ import argparse
 import torch
 import torch.nn.functional as F
 
-from data import Shapes2dDataset
+from datasets.data import Shapes2dDataset
 from utils.loss_functions import ChamferLossKL, calc_kl, calc_reconstruction_loss, VGGDistance
 from torch.utils.data import DataLoader
 import torchvision.utils as vutils
@@ -564,6 +564,7 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--dataset", type=str, default='celeba',
                         help="dataset of to train the model on: ['celeba', 'traffic', 'clevrer', 'shapes', 'shapes2d]")
     parser.add_argument("--dataset_path", type=str, required=False)
+    parser.add_argument("--image_size", type=int, required=True)
     parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("-o", "--override", action='store_true',
                         help="set True to override default hyper-parameters via command line")
@@ -708,8 +709,8 @@ if __name__ == "__main__":
         raise NotImplementedError("unrecognized dataset, please implement it and add it to the train script")
 
     if args.dataset_path is not None:
-        print('Loading dataset:', args.dataset_path)
-        dataset = Shapes2dDataset(path=args.dataset_path)
+        print('Loading dataset:', args.dataset_path, 'Image size:', args.image_size)
+        dataset = Shapes2dDataset(path=args.dataset_path, image_size=args.image_size)
     else:
         dataset = None
 
