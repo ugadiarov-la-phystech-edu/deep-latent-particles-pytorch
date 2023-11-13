@@ -717,7 +717,7 @@ class PointNetPPToCNN(nn.Module):
                                 nn.ReLU(True))
 
         # num_upsample = int(np.log(target_hw) // np.log(2)) - 3
-        num_upsample = int(np.log2(patch_size[0])) - 3  # thanks @MoritzLange
+        num_upsample = int(np.log2(target_hw)) - 3  # thanks @MoritzLange
         # print(f'pointnet to cnn num upsample: {num_upsample}')
         self.cnn = nn.Sequential()
         for i in range(num_upsample):
