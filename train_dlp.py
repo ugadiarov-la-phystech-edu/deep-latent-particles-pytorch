@@ -20,6 +20,8 @@ import argparse
 # torch
 import torch
 import torch.nn.functional as F
+
+from data import Shapes2dDataset
 from utils.loss_functions import ChamferLossKL, calc_kl, calc_reconstruction_loss, VGGDistance
 from torch.utils.data import DataLoader
 import torchvision.utils as vutils
@@ -48,7 +50,7 @@ def train_dlp(ds="shapes", batch_size=16, lr=5e-4, device=torch.device("cpu"), k
               learned_feature_dim=0, n_kp_prior=100, weight_decay=0.0, kp_range=(0, 1),
               run_prefix="", mask_threshold=0.2, use_tps=False, use_pairs=False, use_object_enc=True,
               use_object_dec=False, warmup_epoch=5, iou_thresh=0.2, anchor_s=0.25, learn_order=False,
-              kl_balance=0.1, exclusive_patches=False):
+              kl_balance=0.1, exclusive_patches=False, dataset=None, num_workers=0):
     """
     ds: dataset name (str)
     enc_channels: channels for the posterior CNN (takes in the whole image)
@@ -126,13 +128,14 @@ def train_dlp(ds="shapes", batch_size=16, lr=5e-4, device=torch.device("cpu"), k
         mode = 'single'
         dataset = CLEVRERDataset(path_to_npy=root, image_size=image_size, mode=mode, train=True)
         milestones = (50, 100, 200)
-    elif ds == "shapes":
+    elif ds in ("shapes", "shapes2d"):
         image_size = 64
         ch = 3
         enc_channels = [32, 64, 128]
         prior_channels = (16, 32, 64)
-        print('generating random shapes dataset')
-        dataset = generate_shape_dataset_torch(num_images=40_000)
+        if ds == "shapes":
+            print('generating random shapes dataset')
+            dataset = generate_shape_dataset_torch(num_images=40_000)
         milestones = (20, 40, 80)
     else:
         raise NotImplementedError
@@ -151,7 +154,7 @@ def train_dlp(ds="shapes", batch_size=16, lr=5e-4, device=torch.device("cpu"), k
                'prior_channels': prior_channels, 'exclusive_patches': exclusive_patches}
 
     # create dataloader
-    dataloader = DataLoader(dataset, shuffle=True, batch_size=batch_size, num_workers=0, pin_memory=True,
+    dataloader = DataLoader(dataset, shuffle=True, batch_size=batch_size, num_workers=num_workers, pin_memory=False,
                             drop_last=True)
     # model
     model = KeyPointVAE(cdim=ch, enc_channels=enc_channels, prior_channels=prior_channels,
@@ -560,6 +563,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="DLP Single-GPU Training")
     parser.add_argument("-d", "--dataset", type=str, default='celeba',
                         help="dataset of to train the model on: ['celeba', 'traffic', 'clevrer', 'shapes']")
+    parser.add_argument("--dataset_path", type=str, required=False)
+    parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("-o", "--override", action='store_true',
                         help="set True to override default hyper-parameters via command line")
     parser.add_argument("-l", "--lr", type=float, help="learning rate", default=2e-4)
@@ -600,6 +605,8 @@ if __name__ == "__main__":
     parser.add_argument("--exclusive_patches", action='store_true',
                         help="set True to enable non-overlapping object patches")
     args = parser.parse_args()
+
+    print('Args:', vars(args))
 
     # default hyper-parameters
     lr = 2e-4
@@ -676,7 +683,7 @@ if __name__ == "__main__":
         anchor_s = 0.25
         kl_balance = 0.001
         exclusive_patches = False
-    elif args.dataset == 'shapes':
+    elif args.dataset in ('shapes', 'shapes2d'):
         beta_kl = 0.05
         beta_rec = 1.0
         n_kp_enc = 10  # total kp to output from the encoder / filter from prior
@@ -699,6 +706,12 @@ if __name__ == "__main__":
         batch_size = 64
     else:
         raise NotImplementedError("unrecognized dataset, please implement it and add it to the train script")
+
+    if args.dataset_path is not None:
+        print('Loading dataset:', args.dataset_path)
+        dataset = Shapes2dDataset(path=args.dataset_path)
+    else:
+        dataset = None
 
     override_hp = args.override
     if override_hp:
@@ -732,4 +745,5 @@ if __name__ == "__main__":
                       eval_epoch_freq=eval_epoch_freq, n_kp_prior=n_kp_prior, run_prefix=run_prefix,
                       mask_threshold=mask_threshold, use_tps=use_tps, use_pairs=use_pairs, anchor_s=anchor_s,
                       use_object_enc=use_object_enc, use_object_dec=use_object_dec, exclusive_patches=exclusive_patches,
-                      warmup_epoch=warmup_epoch, learn_order=learn_order, kl_balance=kl_balance)
+                      warmup_epoch=warmup_epoch, learn_order=learn_order, kl_balance=kl_balance, dataset=dataset,
+                      num_workers=args.num_workers)
