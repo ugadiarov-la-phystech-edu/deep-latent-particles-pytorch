@@ -562,7 +562,7 @@ def train_dlp(ds="shapes", batch_size=16, lr=5e-4, device=torch.device("cpu"), k
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="DLP Single-GPU Training")
     parser.add_argument("-d", "--dataset", type=str, default='celeba',
-                        help="dataset of to train the model on: ['celeba', 'traffic', 'clevrer', 'shapes']")
+                        help="dataset of to train the model on: ['celeba', 'traffic', 'clevrer', 'shapes', 'shapes2d]")
     parser.add_argument("--dataset_path", type=str, required=False)
     parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("-o", "--override", action='store_true',
