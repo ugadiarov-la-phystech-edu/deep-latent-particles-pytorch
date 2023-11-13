@@ -619,7 +619,7 @@ if __name__ == "__main__":
     mask_threshold = 0.2  # mask threshold for the features from the encoder
     kp_range = (-1, 1)
     weight_decay = 0.0
-    run_prefix = ""
+    run_prefix = args.prefix
     learn_order = False
     use_logsoftmax = False
     pad_mode = 'replicate'
