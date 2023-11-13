@@ -129,13 +129,15 @@ def train_dlp(ds="shapes", batch_size=16, lr=5e-4, device=torch.device("cpu"), k
         dataset = CLEVRERDataset(path_to_npy=root, image_size=image_size, mode=mode, train=True)
         milestones = (50, 100, 200)
     elif ds in ("shapes", "shapes2d"):
-        image_size = 64
         ch = 3
         enc_channels = [32, 64, 128]
         prior_channels = (16, 32, 64)
         if ds == "shapes":
             print('generating random shapes dataset')
             dataset = generate_shape_dataset_torch(num_images=40_000)
+            image_size = 64
+        else:
+            image_size = dataset.image_size
         milestones = (20, 40, 80)
     else:
         raise NotImplementedError
@@ -564,7 +566,7 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--dataset", type=str, default='celeba',
                         help="dataset of to train the model on: ['celeba', 'traffic', 'clevrer', 'shapes', 'shapes2d]")
     parser.add_argument("--dataset_path", type=str, required=False)
-    parser.add_argument("--image_size", type=int, required=True)
+    parser.add_argument("--image_size", type=int, required=False)
     parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("-o", "--override", action='store_true',
                         help="set True to override default hyper-parameters via command line")
@@ -613,7 +615,7 @@ if __name__ == "__main__":
     lr = 2e-4
     batch_size = 64
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    num_epochs = 100
+    num_epochs = args.num_epochs
     load_model = False
     eval_epoch_freq = 2
     n_kp = 1  # num kp per patch
